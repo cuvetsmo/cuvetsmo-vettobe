@@ -21,7 +21,8 @@ export function SiteHeader() {
         <nav className="flex items-center gap-1 text-sm">
           <NavLink href="/lookup">ค้นรายชื่อ</NavLink>
           <NavLink href="/years/2569">ปี 2569</NavLink>
-          <NavLink href="/years">ทุกปี</NavLink>
+          <NavLink href="/years" hideOnMobile>ทุกปี</NavLink>
+          <NavLink href="/contribute" hideOnMobile>เพิ่มข้อมูล</NavLink>
           <NavLink href="/about" hideOnMobile>เกี่ยวกับ</NavLink>
         </nav>
       </div>
@@ -102,6 +103,8 @@ export function SiteFooter() {
             <li><Link href="/lookup">ค้นรายชื่อ</Link></li>
             <li><Link href="/years">ดูทุกปี</Link></li>
             <li><Link href="/years/2569">ปี 2569 (รุ่นล่าสุด)</Link></li>
+            <li><Link href="/contribute">เพิ่มข้อมูลย้อนหลัง</Link></li>
+            <li><Link href="/admin">Admin</Link></li>
             <li><Link href="/about">เกี่ยวกับเว็บนี้</Link></li>
           </ul>
         </div>

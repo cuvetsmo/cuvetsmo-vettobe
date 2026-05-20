@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAssignmentsByYear } from "@/lib/data/source";
+import { getAssignmentsByYear, getDepartments } from "@/lib/data/source";
 
 export const revalidate = 60;
 
@@ -10,6 +10,15 @@ export async function GET(req: Request) {
   if (!Number.isFinite(yearId)) {
     return NextResponse.json({ error: "Invalid year" }, { status: 400 });
   }
-  const rows = await getAssignmentsByYear(yearId);
-  return NextResponse.json({ year_id: yearId, count: rows.length, assignments: rows });
+  const [rows, depts] = await Promise.all([
+    getAssignmentsByYear(yearId),
+    getDepartments(),
+  ]);
+  // Enrich with dept short_th for nicer client rendering
+  const deptByName = new Map(depts.map((d) => [d.slug, d.short_th ?? d.name_th]));
+  const enriched = rows.map((r) => ({
+    ...r,
+    dept_short_th: deptByName.get(r.dept_slug) ?? r.dept_slug,
+  }));
+  return NextResponse.json({ year_id: yearId, count: enriched.length, assignments: enriched });
 }

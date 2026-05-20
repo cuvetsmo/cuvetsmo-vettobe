@@ -65,6 +65,13 @@ export default async function YearPage({
         <Stat label="ระยะ" value="14 wk" sub="14 พ.ค.–30 ธ.ค." />
       </div>
 
+      {hasData && (
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 mb-8">
+          <h2 className="text-lg font-serif font-semibold mb-3">การกระจาย slot ต่อสัปดาห์</h2>
+          <WeekHistogram assignments={assignments} />
+        </div>
+      )}
+
       <h2 className="text-2xl font-serif font-semibold mb-4">แผนกทั้งหมด</h2>
 
       {!hasData && (
@@ -109,6 +116,31 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <div className="text-[10px] uppercase tracking-wide text-[var(--color-ink-faint)] mb-0.5">{label}</div>
       <div className="font-serif text-xl font-semibold text-[var(--color-ink)]">{value}</div>
       {sub && <div className="text-[10px] text-[var(--color-ink-muted)] mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function WeekHistogram({ assignments }: { assignments: { week: number }[] }) {
+  const counts = new Array(15).fill(0);
+  for (const a of assignments) counts[a.week] = (counts[a.week] ?? 0) + 1;
+  const max = Math.max(...counts.slice(1), 1);
+  return (
+    <div className="grid grid-cols-14 gap-1.5 items-end" style={{ gridTemplateColumns: "repeat(14, 1fr)" }}>
+      {Array.from({ length: 14 }, (_, i) => i + 1).map((w) => {
+        const c = counts[w];
+        const height = (c / max) * 100;
+        return (
+          <div key={w} className="flex flex-col items-center gap-1 min-w-0">
+            <span className="text-[10px] text-[var(--color-ink-muted)]">{c}</span>
+            <div
+              className="w-full bg-[var(--color-accent)] rounded-t transition-all"
+              style={{ height: `${Math.max(height, 4)}px`, minHeight: c > 0 ? 4 : 0 }}
+              title={`W${w}: ${c} slots`}
+            />
+            <span className="text-[10px] font-mono text-[var(--color-ink-faint)]">W{w}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

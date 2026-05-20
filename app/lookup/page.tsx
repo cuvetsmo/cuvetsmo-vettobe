@@ -4,9 +4,11 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import type { Assignment } from "@/lib/types";
 
+type AssignmentWithDept = Assignment & { dept_short_th?: string };
+
 export default function LookupPage() {
   const [q, setQ] = useState("");
-  const [rows, setRows] = useState<Assignment[]>([]);
+  const [rows, setRows] = useState<AssignmentWithDept[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch all 2569 assignments once on mount — small enough (< 100 KB).
@@ -158,7 +160,7 @@ export default function LookupPage() {
               <div className="grid gap-2">
                 {rows
                   .sort((a, b) => a.week - b.week)
-                  .map((r) => (
+                  .map((r: AssignmentWithDept) => (
                     <Link
                       key={r.id}
                       href={`/years/${r.year_id}/depts/${r.dept_slug}`}
@@ -169,7 +171,7 @@ export default function LookupPage() {
                           W{r.week}
                         </span>
                         <span className="font-medium !text-[var(--color-ink)] truncate">
-                          {r.dept_slug}
+                          {r.dept_short_th ?? r.dept_slug}
                         </span>
                         {r.notes && (
                           <span className="text-xs !text-[var(--color-ink-faint)] truncate">
