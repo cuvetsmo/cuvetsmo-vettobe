@@ -3,6 +3,7 @@ import { IBM_Plex_Sans_Thai, Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { SiteHeader, SiteFooter } from "@/components/Brand";
 import { EcosystemBar } from "@/components/EcosystemBar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -72,11 +73,12 @@ export default function RootLayout({
       lang="th"
       className={`${inter.variable} ${ibmPlexSansThai.variable} ${sourceSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col pb-16 md:pb-0">
         <EcosystemBar />
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <MobileBottomNav />
       </body>
     </html>
   );
