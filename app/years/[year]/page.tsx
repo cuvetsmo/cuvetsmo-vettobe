@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getYear, getYears, getDepartments, getAssignmentsByYear } from "@/lib/data/source";
+import { getYearCredit } from "@/lib/data/credits";
+import { TeamCredits } from "@/components/TeamCredits";
 
 export async function generateStaticParams() {
   const years = await getYears();
@@ -37,6 +39,7 @@ export default async function YearPage({
     getAssignmentsByYear(yearId),
   ]);
   if (!y) notFound();
+  const credit = getYearCredit(yearId);
 
   // count per dept
   const countByDept = new Map<string, number>();
@@ -66,12 +69,14 @@ export default async function YearPage({
         <p className="text-[var(--color-ink-muted)] max-w-2xl">{y.notes}</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <Stat label="Slots" value={y.total_slots.toString()} />
         <Stat label="นิสิต" value={y.unique_students.toString()} />
         <Stat label="แผนกเปิด" value={String(departments.length)} sub={yearId === 2569 ? "ศัลย์ปิด" : undefined} />
         <Stat label="ระยะ" value="14 wk" sub="14 พ.ค.–30 ธ.ค." />
       </div>
+
+      {credit && <TeamCredits credit={credit} />}
 
       {hasData && (
         <>

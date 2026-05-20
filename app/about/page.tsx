@@ -36,11 +36,11 @@ export default function AboutPage() {
           </li>
           <li>
             <strong>รีวิวแต่ละแผนก × ปี</strong> — คนที่เคยฝึกจริงรีวิวแผนก
-            (เปิดในเฟสถัดไป)
+            (auth-gate · 1 รีวิวต่อคนต่อแผนก)
           </li>
           <li>
-            <strong>Operations console</strong> — ทีมหัวปีจัดรอบใหม่ได้ในเว็บ
-            ไม่ต้องใช้ Excel + claude.ai แยกกันอีก (เฟสถัดไป)
+            <strong>Operations console</strong> — ทีมหัวปีจัดรอบใหม่ในเว็บได้
+            (edit / CSV bulk import / issue queue / capacity audit)
           </li>
           <li>
             <strong>คลังย้อนหลังระยะยาว</strong> — ข้อมูลทุกปีเก็บไว้ตลอด
@@ -56,7 +56,8 @@ export default function AboutPage() {
       <Section title="ข้อมูลความถูกต้อง">
         <p>
           ปี <strong className="text-[var(--color-ink)]">2569 (2026)</strong> —
-          ข้อมูลส่วนใหญ่มาจากผลจัดเวรอัตโนมัติ + manual swaps ของทีมหัวปี cuvet86
+          ข้อมูลส่วนใหญ่มาจากผลจัดเวรอัตโนมัติ + manual swaps ของทีมหัวปี
+          <strong className="text-[var(--color-ink)]"> cuvet86 + cuvet87</strong>{" "}
           ผ่านการตรวจรอบสุดท้ายที่ FINAL PDF (19 พ.ค. 2569) — ยืนยันได้ระดับสูง
         </p>
         <p>
@@ -64,24 +65,41 @@ export default function AboutPage() {
           ยังเป็น placeholder รอ crowdsource จากรุ่นพี่ในเฟสถัดไป
         </p>
         <p>
-          ⚠️ <strong className="text-[var(--color-ink)]">ข้อมูลในเฟสนี้ (partial seed)</strong>{" "}
-          มี ~60 รายจาก 290 — ที่เหลืออยู่ใน FINAL PDF ของทีมหัวปี รอ import
-          เข้า Supabase backend ในเฟสถัดไป
-        </p>
-        <p>
-          ถ้าเจอข้อมูลของตัวเองคลาดเคลื่อน — ติดต่อทีมหัวปี cuvet86 หรือรอปุ่ม
-          "report inaccuracy" ที่จะมาในเฟสถัดไป
+          ถ้าเจอข้อมูลของตัวเองคลาดเคลื่อน — กดปุ่ม "report inaccuracy" ที่หน้าแผนกได้เลย
+          (เปิด issue ส่งตรงให้ admin)
         </p>
       </Section>
 
-      <Section title="Roadmap">
-        <ul className="space-y-2 text-[var(--color-ink-muted)]">
-          <li>✅ <strong className="text-[var(--color-ink)]">Phase 0</strong> — ดึงข้อมูลจาก claude.ai ลง vault</li>
-          <li>✅ <strong className="text-[var(--color-ink)]">Phase 1a</strong> — Scaffold + theme + หน้าหลัก</li>
-          <li>🔜 <strong className="text-[var(--color-ink)]">Phase 1b</strong> — Supabase backend + import 290 slots</li>
-          <li>🔜 <strong className="text-[var(--color-ink)]">Phase 1c</strong> — Auth + รีวิวแผนก</li>
-          <li>🔜 <strong className="text-[var(--color-ink)]">Phase 1d</strong> — Operations console (ทีมหัวปี)</li>
-          <li>📅 <strong className="text-[var(--color-ink)]">Phase 1e</strong> — Crowdsource ย้อนหลัง 2567/2568</li>
+      <Section title="🙌 ทีมหัวปีที่จัดรอบ 2569">
+        <p>
+          รอบ <strong className="text-[var(--color-ink)]">Vet to be 2569</strong>{" "}
+          เป็นความร่วมมือของ <strong className="text-[var(--color-ink)]">2 รุ่น</strong>:
+        </p>
+        <ul className="list-disc list-inside space-y-1.5 ml-2 [&>li>strong]:text-[var(--color-ink)]">
+          <li>
+            <strong>cuvet86 (Vet 86)</strong> — รุ่นพี่ที่จัดในขณะที่กำลังขึ้นปี 5
+            (ฝึกปลายเทอม + ช่วยตรวจรอบสุดท้าย)
+          </li>
+          <li>
+            <strong>cuvet87 (Vet 87)</strong> — รุ่นน้องที่ขึ้นปี 4 ปีนี้
+            (ช่วยรับฟอร์ม + จัดอันดับ + swap manual ในรอบ 2–3)
+          </li>
+        </ul>
+        <p>
+          ขอบคุณทีมหัวปีทั้งสองรุ่น ที่ช่วยกันทำให้รอบ 2569 — 290 slot ใน 18 แผนก กับ 161 นิสิต —
+          เสร็จเรียบร้อยและถูกต้องตาม FINAL
+        </p>
+      </Section>
+
+      <Section title="ฟีเจอร์ที่เปิดแล้ว">
+        <ul className="space-y-1.5 text-[var(--color-ink-muted)] [&>li>strong]:text-[var(--color-ink)]">
+          <li>✅ <strong>ค้นรายชื่อ + per-student profile</strong> — พิมพ์ชื่อเล่นหรือ #รหัส</li>
+          <li>✅ <strong>290-row seed</strong> — ครบทั้ง 18 แผนก × 14 สัปดาห์ จาก FINAL PDF</li>
+          <li>✅ <strong>Year overview + dept page + stats</strong> — slot/cert/rank breakdown</li>
+          <li>✅ <strong>Magic-link auth + รีวิวแผนก × ปี</strong></li>
+          <li>✅ <strong>Operations console</strong> — สำหรับ admin (ทีมหัวปี): edit / CSV bulk import / issue queue / capacity audit</li>
+          <li>✅ <strong>PWA + bottom nav + dark mode + share</strong></li>
+          <li>✅ <strong>Crowdsource backfill</strong> — เพิ่มข้อมูลย้อนหลัง 2567/2568 ได้ที่ /contribute</li>
         </ul>
       </Section>
 
@@ -89,6 +107,10 @@ export default function AboutPage() {
         <p>
           เว็บนี้ส่วนหนึ่งของ <Link href="https://cuvetsmo.com">CUVETSMO ecosystem</Link>
           — โดยสโมสรนิสิตคณะสัตวแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย
+        </p>
+        <p>
+          เนื้อหารอบ 2569 — โดย <strong className="text-[var(--color-ink)]">ทีมหัวปี cuvet86 + cuvet87</strong>{" "}
+          (ดูรายละเอียดในหัวข้อด้านบน)
         </p>
         <p>
           อ่านเพิ่มเติม: <a href="https://labs.cuvetsmo.com">Labs</a>{" "}·{" "}
