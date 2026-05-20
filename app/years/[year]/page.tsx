@@ -48,9 +48,17 @@ export default async function YearPage({
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
       <div className="mb-8">
-        <Link href="/years" className="text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] inline-flex items-center gap-1 mb-3">
-          ← ทุกปี
-        </Link>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <Link href="/years" className="text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] inline-flex items-center gap-1">
+            ← ทุกปี
+          </Link>
+          <Link
+            href={`/years/${yearId}/print`}
+            className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] rounded px-2 py-1"
+          >
+            🖨️ Archive print view
+          </Link>
+        </div>
         <div className="flex items-baseline gap-3 flex-wrap mb-2">
           <h1 className="text-4xl font-serif font-semibold">{y.id}</h1>
           <span className="text-lg text-[var(--color-ink-muted)]">{y.name.split("(")[1]?.replace(")", "")}</span>

@@ -22,6 +22,7 @@ export function SiteHeader() {
           <NavLink href="/lookup">ค้นรายชื่อ</NavLink>
           <NavLink href="/years/2569">ปี 2569</NavLink>
           <NavLink href="/years" hideOnMobile>ทุกปี</NavLink>
+          <NavLink href="/stats" hideOnMobile>สถิติ</NavLink>
           <NavLink href="/contribute" hideOnMobile>เพิ่มข้อมูล</NavLink>
           <NavLink href="/about" hideOnMobile>เกี่ยวกับ</NavLink>
         </nav>
