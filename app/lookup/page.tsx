@@ -1,31 +1,49 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { SEED_2569 } from "@/lib/data/seed-2569";
-import { DEPT_BY_SLUG } from "@/lib/data/departments";
 import type { Assignment } from "@/lib/types";
 
 export default function LookupPage() {
   const [q, setQ] = useState("");
+  const [rows, setRows] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch all 2569 assignments once on mount — small enough (< 100 KB).
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/assignments?year=2569")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!cancelled) {
+          setRows(j.assignments || []);
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
     if (query.length < 1) return [];
-
-    // Match against nickname, short_id, full_name
-    return SEED_2569.filter((a) => {
-      return (
+    return rows.filter(
+      (a) =>
         a.nickname.toLowerCase().includes(query) ||
         a.short_id.includes(query) ||
-        a.full_name?.toLowerCase().includes(query)
-      );
-    });
-  }, [q]);
+        (a.full_name && a.full_name.toLowerCase().includes(query))
+    );
+  }, [q, rows]);
 
   // Group results by student
   const byStudent = useMemo(() => {
-    const map = new Map<string, { student: Pick<Assignment, "nickname" | "short_id" | "full_name" | "student_year">; rows: Assignment[] }>();
+    type Group = {
+      student: Pick<Assignment, "nickname" | "short_id" | "full_name" | "student_year">;
+      rows: Assignment[];
+    };
+    const map = new Map<string, Group>();
     for (const r of results) {
       const key = `${r.short_id}-${r.nickname}`;
       if (!map.has(key)) {
@@ -75,23 +93,31 @@ export default function LookupPage() {
         )}
       </div>
 
-      {q.length === 0 && (
+      {loading && q.length === 0 && (
+        <div className="text-center py-12 text-[var(--color-ink-muted)]">
+          <div className="text-5xl mb-3">⏳</div>
+          <p>กำลังโหลดข้อมูลจาก Supabase...</p>
+        </div>
+      )}
+
+      {!loading && q.length === 0 && (
         <div className="text-center py-12 text-[var(--color-ink-muted)]">
           <div className="text-5xl mb-3">🔎</div>
-          <p>เริ่มพิมพ์เพื่อค้นหา</p>
+          <p>เริ่มพิมพ์เพื่อค้นหา · มี {rows.length} แถวในฐานข้อมูล</p>
           <p className="text-xs mt-2 text-[var(--color-ink-faint)]">
-            หมายเหตุ: เห็นเฉพาะข้อมูล 2569 ที่อยู่ใน partial seed ตอนนี้ ส่วนปีก่อนหน้า {" "}
-            <Link href="/years">รอเปิด crowdsource</Link>
+            ปีก่อนหน้ารอเปิด crowdsource ในเฟสถัดไป
           </p>
         </div>
       )}
 
-      {q.length > 0 && byStudent.length === 0 && (
+      {!loading && q.length > 0 && byStudent.length === 0 && (
         <div className="text-center py-12 text-[var(--color-ink-muted)]">
           <div className="text-4xl mb-3">🤔</div>
-          <p>ไม่เจอ <strong className="text-[var(--color-ink)]">{q}</strong> ในข้อมูล 2569</p>
+          <p>
+            ไม่เจอ <strong className="text-[var(--color-ink)]">{q}</strong> ในข้อมูล 2569
+          </p>
           <p className="text-xs mt-2 text-[var(--color-ink-faint)]">
-            อาจเพราะยังไม่ได้ import เข้า seed (ตอนนี้มี ~60 รายชื่อ จากทั้งหมด 290)
+            อาจเป็นเพราะยังไม่ได้ import เข้าฐานข้อมูล — ลองค้นชื่อเล่น/เลขใหม่
           </p>
         </div>
       )}
@@ -120,10 +146,10 @@ export default function LookupPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-[var(--color-ink-muted)]">
-                    รวม {totalDays} วัน
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded ${certOk ? "badge-cert" : "badge-no-cert"}`}>
+                  <span className="text-sm text-[var(--color-ink-muted)]">รวม {totalDays} วัน</span>
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${certOk ? "badge-cert" : "badge-no-cert"}`}
+                  >
                     {certOk ? "✓ ครบเกียรติบัตร" : "⚠ ไม่ครบ 7 วัน"}
                   </span>
                 </div>
@@ -132,34 +158,33 @@ export default function LookupPage() {
               <div className="grid gap-2">
                 {rows
                   .sort((a, b) => a.week - b.week)
-                  .map((r) => {
-                    const dept = DEPT_BY_SLUG.get(r.dept_slug);
-                    return (
-                      <Link
-                        key={r.id}
-                        href={`/years/${r.year_id}/depts/${r.dept_slug}`}
-                        className="flex items-center justify-between gap-3 bg-[var(--color-surface-lift)] hover:bg-[var(--color-surface-strong)] rounded-lg px-3 py-2 text-sm transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="font-mono text-xs text-[var(--color-ink-faint)] shrink-0 bg-[var(--color-surface)] px-2 py-0.5 rounded">
-                            W{r.week}
+                  .map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/years/${r.year_id}/depts/${r.dept_slug}`}
+                      className="flex items-center justify-between gap-3 bg-[var(--color-surface-lift)] hover:bg-[var(--color-surface-strong)] rounded-lg px-3 py-2 text-sm transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-mono text-xs text-[var(--color-ink-faint)] shrink-0 bg-[var(--color-surface)] px-2 py-0.5 rounded">
+                          W{r.week}
+                        </span>
+                        <span className="font-medium !text-[var(--color-ink)] truncate">
+                          {r.dept_slug}
+                        </span>
+                        {r.notes && (
+                          <span className="text-xs !text-[var(--color-ink-faint)] truncate">
+                            {r.notes}
                           </span>
-                          <span className="font-medium !text-[var(--color-ink)] truncate">
-                            {dept?.short_th ?? dept?.name_th ?? r.dept_slug}
-                          </span>
-                          {r.notes && (
-                            <span className="text-xs !text-[var(--color-ink-faint)] truncate">
-                              {r.notes}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs !text-[var(--color-ink-muted)]">{r.days_practiced} วัน</span>
-                          <RankChip rank={r.rank} />
-                        </div>
-                      </Link>
-                    );
-                  })}
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs !text-[var(--color-ink-muted)]">
+                          {r.days_practiced} วัน
+                        </span>
+                        <RankChip rank={r.rank} />
+                      </div>
+                    </Link>
+                  ))}
               </div>
             </div>
           );

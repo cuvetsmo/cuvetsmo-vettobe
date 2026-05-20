@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { YEAR_BY_ID, YEARS } from "@/lib/data/years";
-import { DEPARTMENTS } from "@/lib/data/departments";
-import { SEED_2569, ASSIGNMENTS_BY_DEPT } from "@/lib/data/seed-2569";
+import { getYear, getYears, getDepartments, getAssignmentsByYear } from "@/lib/data/source";
 
 export async function generateStaticParams() {
-  return YEARS.map((y) => ({ year: String(y.id) }));
+  const years = await getYears();
+  return years.map((y) => ({ year: String(y.id) }));
 }
+
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
@@ -15,11 +16,11 @@ export async function generateMetadata({
   params: Promise<{ year: string }>;
 }): Promise<Metadata> {
   const { year } = await params;
-  const y = YEAR_BY_ID.get(Number(year));
+  const y = await getYear(Number(year));
   if (!y) return { title: "ไม่พบปี" };
   return {
     title: `Vet to be ${y.id} — ภาพรวม`,
-    description: `ภาพรวมโครงการ Vet to be ปี ${y.id} — แผนก ${DEPARTMENTS.length} แผนก, ${y.total_slots} slots, ${y.unique_students} นิสิต`,
+    description: `ภาพรวมโครงการ Vet to be ปี ${y.id} — ${y.total_slots} slots, ${y.unique_students} นิสิต`,
   };
 }
 
@@ -30,20 +31,24 @@ export default async function YearPage({
 }) {
   const { year } = await params;
   const yearId = Number(year);
-  const y = YEAR_BY_ID.get(yearId);
+  const [y, departments, assignments] = await Promise.all([
+    getYear(yearId),
+    getDepartments(),
+    getAssignmentsByYear(yearId),
+  ]);
   if (!y) notFound();
 
-  // Only 2569 has actual seed; future years will fetch from Supabase
-  const hasData = yearId === 2569 && SEED_2569.length > 0;
+  // count per dept
+  const countByDept = new Map<string, number>();
+  for (const a of assignments) {
+    countByDept.set(a.dept_slug, (countByDept.get(a.dept_slug) ?? 0) + 1);
+  }
+  const hasData = assignments.length > 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
-      {/* Header */}
       <div className="mb-8">
-        <Link
-          href="/years"
-          className="text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] inline-flex items-center gap-1 mb-3"
-        >
+        <Link href="/years" className="text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] inline-flex items-center gap-1 mb-3">
           ← ทุกปี
         </Link>
         <div className="flex items-baseline gap-3 flex-wrap mb-2">
@@ -53,31 +58,27 @@ export default async function YearPage({
         <p className="text-[var(--color-ink-muted)] max-w-2xl">{y.notes}</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         <Stat label="Slots" value={y.total_slots.toString()} />
         <Stat label="นิสิต" value={y.unique_students.toString()} />
-        <Stat label="แผนกเปิด" value={String(DEPARTMENTS.filter((d) => d.slug !== "surgery" || yearId !== 2569).length)} sub={yearId === 2569 ? "ศัลย์ปิด" : ""} />
+        <Stat label="แผนกเปิด" value={String(departments.length)} sub={yearId === 2569 ? "ศัลย์ปิด" : undefined} />
         <Stat label="ระยะ" value="14 wk" sub="14 พ.ค.–30 ธ.ค." />
       </div>
 
-      {/* Departments grid for this year */}
       <h2 className="text-2xl font-serif font-semibold mb-4">แผนกทั้งหมด</h2>
 
       {!hasData && (
         <div className="bg-[var(--color-accent-soft)]/40 border border-[var(--color-border)] rounded-xl p-6 text-center">
           <div className="text-4xl mb-2">📦</div>
           <p className="font-medium mb-1">ยังไม่มีข้อมูลปี {yearId}</p>
-          <p className="text-sm text-[var(--color-ink-muted)]">
-            ปีนี้รอ crowdsource จากรุ่นพี่ — เปิดในเฟสถัดไป
-          </p>
+          <p className="text-sm text-[var(--color-ink-muted)]">ปีนี้รอ crowdsource จากรุ่นพี่ — เปิดในเฟสถัดไป</p>
         </div>
       )}
 
       {hasData && (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {DEPARTMENTS.map((d) => {
-            const rows = ASSIGNMENTS_BY_DEPT.get(d.slug) ?? [];
+          {departments.map((d) => {
+            const count = countByDept.get(d.slug) ?? 0;
             const isSurgeryClosed = d.slug === "surgery" && yearId === 2569;
             return (
               <Link
@@ -86,17 +87,13 @@ export default async function YearPage({
                 className="block bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] rounded-xl p-4 transition-all hover:shadow-[var(--shadow-card)]"
               >
                 <div className="flex items-baseline justify-between mb-1.5">
-                  <span className="font-serif font-semibold !text-[var(--color-ink)]">
-                    {d.short_th ?? d.name_th}
-                  </span>
+                  <span className="font-serif font-semibold !text-[var(--color-ink)]">{d.short_th ?? d.name_th}</span>
                   <span className="text-xs !text-[var(--color-ink-faint)]">
-                    {isSurgeryClosed ? "ปิดรับ" : `${rows.length} ใน seed`}
+                    {isSurgeryClosed ? "ปิดรับ" : count > 0 ? `${count} นิสิต` : "ยังไม่มีข้อมูล"}
                   </span>
                 </div>
                 <div className="text-xs !text-[var(--color-ink-muted)]">{d.name_en}</div>
-                {d.notes && (
-                  <div className="text-xs !text-[var(--color-ink-faint)] mt-1.5 italic">{d.notes}</div>
-                )}
+                {d.notes && <div className="text-xs !text-[var(--color-ink-faint)] mt-1.5 italic">{d.notes}</div>}
               </Link>
             );
           })}
