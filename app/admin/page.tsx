@@ -232,11 +232,21 @@ export default function AdminPage() {
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4 mb-8">
+      <div className="grid gap-4 md:grid-cols-4 mb-4">
         <Stat label="ปีที่บันทึก" value={String(years.length)} />
         <Stat label="Slots ทั้งหมด" value={String(years.reduce((s, y) => s + (y.total_slots ?? 0), 0))} />
         <Stat label="รีวิวรวม" value={String(reviewCount)} />
         <Stat label="Issue ค้าง" value={String(openIssues.length)} />
+      </div>
+
+      <div className="mb-8">
+        <Link
+          href="/admin/audit"
+          prefetch={false}
+          className="inline-flex items-center gap-2 text-sm bg-[var(--color-surface)] hover:bg-[var(--color-surface-lift)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] !text-[var(--color-ink)] px-3 py-2 rounded-lg transition-colors"
+        >
+          🔍 Data audit (capacity overflow)
+        </Link>
       </div>
 
       {/* Years management */}

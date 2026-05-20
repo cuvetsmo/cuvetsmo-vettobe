@@ -190,6 +190,88 @@ export const getRecentActivity = unstable_cache(
   { revalidate: 60, tags: ["vettobe-reviews", "vettobe-issues"] }
 );
 
+/* ── Capacity warnings (admin) ──────────────────────────────────────────── */
+
+export type CapacityWarning = {
+  year_id: number;
+  dept_slug: string;
+  dept_short_th: string;
+  week: number;
+  students: number;
+  capacity_per_day: number;
+  student_days: number;
+  weekly_capacity: number;
+  status: "HARD_OVER" | "COUNT_OVER";
+  occupants: Array<{
+    short_id: string;
+    nickname: string;
+    student_year: number;
+    days_practiced: number;
+  }>;
+};
+
+export const getCapacityWarnings = unstable_cache(
+  async (yearId: number): Promise<CapacityWarning[]> => {
+    const sb = getSupabaseServer();
+    if (!sb) return [];
+    const [{ data: assignments }, depts] = await Promise.all([
+      sb
+        .from("vettobe_assignments")
+        .select("dept_slug, week, short_id, nickname, student_year, days_practiced")
+        .eq("year_id", yearId),
+      getDepartments(),
+    ]);
+    if (!assignments) return [];
+
+    const deptByMaster = new Map(depts.map((d) => [d.slug, d]));
+    type Row = (typeof assignments)[number];
+    const byCell = new Map<string, Row[]>();
+    for (const a of assignments) {
+      const k = `${a.dept_slug}::${a.week}`;
+      const list = byCell.get(k);
+      if (list) list.push(a);
+      else byCell.set(k, [a]);
+    }
+
+    const warnings: CapacityWarning[] = [];
+    for (const [key, rows] of byCell) {
+      const [dept_slug, weekStr] = key.split("::");
+      const week = Number(weekStr);
+      const dept = deptByMaster.get(dept_slug);
+      if (!dept) continue;
+      const cap = dept.capacity_per_day;
+      if (rows.length <= cap) continue;
+      const studentDays = rows.reduce((s, r) => s + (r.days_practiced ?? 0), 0);
+      const weeklyCapacity = cap * 7;
+      warnings.push({
+        year_id: yearId,
+        dept_slug,
+        dept_short_th: dept.short_th ?? dept.name_th,
+        week,
+        students: rows.length,
+        capacity_per_day: cap,
+        student_days: studentDays,
+        weekly_capacity: weeklyCapacity,
+        status: studentDays > weeklyCapacity ? "HARD_OVER" : "COUNT_OVER",
+        occupants: rows
+          .map((r) => ({
+            short_id: r.short_id,
+            nickname: r.nickname,
+            student_year: r.student_year,
+            days_practiced: r.days_practiced,
+          }))
+          .sort((a, b) => b.days_practiced - a.days_practiced || a.short_id.localeCompare(b.short_id)),
+      });
+    }
+    return warnings.sort((a, b) => {
+      if (a.status !== b.status) return a.status === "HARD_OVER" ? -1 : 1;
+      return a.dept_slug.localeCompare(b.dept_slug) || a.week - b.week;
+    });
+  },
+  ["vettobe-capacity-warnings"],
+  { revalidate: 120, tags: ["vettobe-assignments"] }
+);
+
 /* ── Status badge ────────────────────────────────────────────────────────── */
 
 export function dataSourceBadge(): "supabase" | "seed" {
