@@ -1,26 +1,146 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+ * vettobe.cuvetsmo.com — "Parchment academic" theme
+ *
+ * Distinct from sister CUVETSMO subdomains by design:
+ *   - labs    = cream + warm-orange editorial (more saturated, lifestyle vibe)
+ *   - web3    = dark + Base Blue (tech)
+ *   - imaging = dark + cyan + violet (clinical-creative)
+ *   - vettobe = parchment + deep forest + terracotta (academic warmth)
+ *
+ * Vibe: a folder of training notes you keep through years of vet school.
+ * Earth tones, warm cream, not sterile. Welcoming to past trainees coming
+ * back to look up their year, and to future applicants browsing reviews.
+ * --------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --color-bg: #fbf6e9;            /* parchment cream — page bg */
+  --color-surface: #fffcf2;        /* card / panel surface */
+  --color-surface-lift: #f6efde;   /* hover / nested */
+  --color-surface-strong: #efe5cb; /* table header / chip */
+
+  /* Ink */
+  --color-ink: #1f3026;            /* deep forest — primary text */
+  --color-ink-muted: #5d6e60;      /* secondary text */
+  --color-ink-faint: #8a9690;      /* tertiary / hints */
+
+  /* Accent (CTA, links) */
+  --color-accent: #c44827;         /* terracotta */
+  --color-accent-strong: #a83619;  /* hover */
+  --color-accent-soft: #f4d4c5;    /* tinted bg */
+
+  /* Status colors */
+  --color-success: #5d8348;        /* sage — cert obtained, rank 1 fill */
+  --color-warning: #c89211;        /* mustard — at-risk / pending */
+  --color-danger: #a83619;         /* terracotta deep — no cert */
+  --color-rank-1: #5d8348;         /* sage for rank 1 */
+  --color-rank-2: #7a8b48;         /* olive-yellow for rank 2 */
+  --color-rank-3: #b48c2f;         /* mustard for rank 3 */
+  --color-rank-fill: #8a9c7b;      /* muted sage for fill */
+  --color-rank-random: #b8a48c;    /* sand for random */
+
+  /* Borders, dividers */
+  --color-border: #e6dec7;
+  --color-border-strong: #d4c8a8;
+  --color-border-accent: rgba(196, 72, 39, 0.32);
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(31, 48, 38, 0.04), 0 4px 12px -4px rgba(31, 48, 38, 0.08);
+  --shadow-lift: 0 2px 4px rgba(31, 48, 38, 0.06), 0 12px 32px -12px rgba(31, 48, 38, 0.16);
+
+  /* Fonts */
+  --font-sans: var(--font-inter), var(--font-ibm-plex-sans-thai), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Noto Serif Thai", serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-lift: var(--color-surface-lift);
+  --color-surface-strong: var(--color-surface-strong);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-accent: var(--color-accent);
+  --color-accent-strong: var(--color-accent-strong);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv01", "cv03";
+}
+
+/* Headings — serif for editorial feel, sans-serif fallback for Thai */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+h1 { font-weight: 600; }
+h2 { font-weight: 600; }
+h3 { font-weight: 500; }
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+a:hover { color: var(--color-accent-strong); }
+
+/* Subtle paper texture on hero — adds depth without being noisy */
+.bg-paper {
+  background-color: var(--color-surface);
+  background-image:
+    radial-gradient(at 20% 30%, rgba(196, 72, 39, 0.04) 0px, transparent 50%),
+    radial-gradient(at 80% 70%, rgba(93, 131, 72, 0.04) 0px, transparent 50%);
+}
+
+/* Cert badge styles */
+.badge-cert {
+  background: var(--color-success);
+  color: white;
+  font-weight: 500;
+}
+.badge-no-cert {
+  background: var(--color-accent-soft);
+  color: var(--color-danger);
+  font-weight: 500;
+}
+.badge-at-risk {
+  background: rgba(200, 146, 17, 0.16);
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+/* Rank chip — uses --color-rank-* */
+.chip-rank-1 { background: rgba(93, 131, 72, 0.16); color: var(--color-rank-1); }
+.chip-rank-2 { background: rgba(122, 139, 72, 0.16); color: var(--color-rank-2); }
+.chip-rank-3 { background: rgba(180, 140, 47, 0.16); color: var(--color-rank-3); }
+.chip-rank-fill { background: rgba(138, 156, 123, 0.16); color: var(--color-rank-fill); }
+.chip-rank-random { background: rgba(184, 164, 140, 0.20); color: #6b5e4a; }
+
+/* Selection */
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
 }
