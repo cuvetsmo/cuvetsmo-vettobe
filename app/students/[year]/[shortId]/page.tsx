@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getYear, getDepartments, getStudentAssignments } from "@/lib/data/source";
+import { ShareIntents } from "@/components/ShareIntents";
 
 export const revalidate = 60;
 
@@ -74,9 +75,15 @@ export default async function StudentPage({
         {first.full_name && (
           <p className="text-lg text-[var(--color-ink-muted)] mb-2">{first.full_name}</p>
         )}
-        <p className="text-sm text-[var(--color-ink-muted)]">
-          ปี {first.student_year} (cuvet{first.student_year === 5 ? "86" : "87"}) · Vet to be {yearId}
-        </p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            ปี {first.student_year} (cuvet{first.student_year === 5 ? "86" : "87"}) · Vet to be {yearId}
+          </p>
+          <ShareIntents
+            url={`/students/${yearId}/${padded}`}
+            title={`${first.nickname} #${padded} — ฝึก Vet to be ${yearId} ที่ CUVETSMO`}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-8">

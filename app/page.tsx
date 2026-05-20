@@ -1,13 +1,20 @@
 import Link from "next/link";
-import { getYears, getDepartments, getAssignmentsByYear } from "@/lib/data/source";
+import {
+  getYears,
+  getDepartments,
+  getAssignmentsByYear,
+  getRecentActivity,
+} from "@/lib/data/source";
+import { RecentActivity } from "@/components/RecentActivity";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const [years, departments, assignments] = await Promise.all([
+  const [years, departments, assignments, recent] = await Promise.all([
     getYears(),
     getDepartments(),
     getAssignmentsByYear(2569),
+    getRecentActivity(8),
   ]);
   const totalAssignments = assignments.length;
   const totalStudents = new Set(assignments.map((a) => a.short_id)).size;
@@ -124,6 +131,9 @@ export default async function Home() {
           <Feature icon="📚" title="คลังข้อมูลระยะยาว" desc="เก็บข้อมูลย้อนหลังตลอดไป — รุ่นน้องจะดูได้ว่า 5 ปีก่อนมีใครเคยฝึกตรงไหน บรรยากาศเป็นยังไง" href="/years" />
         </div>
       </section>
+
+      {/* Recent activity */}
+      <RecentActivity items={recent} depts={departments} />
 
       {/* Disclaimer */}
       <section className="bg-[var(--color-accent-soft)]/40 border-y border-[var(--color-border)]">

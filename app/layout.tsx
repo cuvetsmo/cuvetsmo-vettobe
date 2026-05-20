@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { IBM_Plex_Sans_Thai, Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { SiteHeader, SiteFooter } from "@/components/Brand";
 import { EcosystemBar } from "@/components/EcosystemBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+
+const THEME_BOOTSTRAP = `(function(){try{var c=document.cookie.match(/(?:^|;\\s*)vettobe-theme=(light|dark)/);var t=c?c[1]:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`;
 
 const inter = Inter({
   variable: "--font-inter",
@@ -65,14 +68,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Read theme cookie SSR-side so [data-theme] is correct in initial HTML.
+  // If absent (first visit), default to "light" and let the inline script
+  // upgrade to prefers-color-scheme before paint.
+  const cookieStore = await cookies();
+  const ssrTheme = cookieStore.get("vettobe-theme")?.value === "dark" ? "dark" : "light";
+
   return (
     <html
       lang="th"
+      data-theme={ssrTheme}
       className={`${inter.variable} ${ibmPlexSansThai.variable} ${sourceSerif.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body className="min-h-full flex flex-col pb-16 md:pb-0">
         <EcosystemBar />
         <SiteHeader />

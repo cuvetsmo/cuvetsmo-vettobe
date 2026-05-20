@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
+import { AdminNotificationBadge } from "./AdminNotificationBadge";
 
 export function SiteHeader() {
   return (
@@ -25,6 +27,8 @@ export function SiteHeader() {
           <NavLink href="/stats" hideOnMobile>สถิติ</NavLink>
           <NavLink href="/contribute" hideOnMobile>เพิ่มข้อมูล</NavLink>
           <NavLink href="/about" hideOnMobile>เกี่ยวกับ</NavLink>
+          <AdminNotificationBadge />
+          <ThemeToggle />
         </nav>
       </div>
     </header>

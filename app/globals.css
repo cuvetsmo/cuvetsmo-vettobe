@@ -144,3 +144,104 @@ a:hover { color: var(--color-accent-strong); }
   background: var(--color-accent-soft);
   color: var(--color-accent-strong);
 }
+
+/* ---------------------------------------------------------------------------
+ * Dark mode — "Forest study at night"
+ *
+ * Same parchment vibe but inverted: warm cream ink on deep forest surfaces.
+ * Accent terracotta brightened to maintain contrast on dark bg. Sage + mustard
+ * status colors tuned upward so cert/at-risk chips stay legible.
+ *
+ * Activated via [data-theme="dark"] on <html> (cookie-persisted in
+ * ThemeToggle.tsx, applied pre-paint by inline script in layout.tsx).
+ * --------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-bg: #161e1a;
+  --color-surface: #1d2622;
+  --color-surface-lift: #252e29;
+  --color-surface-strong: #2c3631;
+
+  /* Ink */
+  --color-ink: #ede7d4;
+  --color-ink-muted: #a8b1a6;
+  --color-ink-faint: #737c75;
+
+  /* Accent — brighter for dark bg contrast */
+  --color-accent: #e36a4a;
+  --color-accent-strong: #f08a6a;
+  --color-accent-soft: rgba(227, 106, 74, 0.16);
+
+  /* Status colors */
+  --color-success: #7fa86a;
+  --color-warning: #e0ad34;
+  --color-danger: #e36a4a;
+  --color-rank-1: #7fa86a;
+  --color-rank-2: #9aa86a;
+  --color-rank-3: #d4a548;
+  --color-rank-fill: #a3b094;
+  --color-rank-random: #c8b89c;
+
+  /* Borders, dividers */
+  --color-border: #2c3631;
+  --color-border-strong: #3a4540;
+  --color-border-accent: rgba(227, 106, 74, 0.32);
+
+  /* Shadows — darker, deeper */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.20), 0 4px 12px -4px rgba(0, 0, 0, 0.40);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.24), 0 12px 32px -12px rgba(0, 0, 0, 0.56);
+}
+
+[data-theme="dark"] .bg-paper {
+  background-color: var(--color-surface);
+  background-image:
+    radial-gradient(at 20% 30%, rgba(227, 106, 74, 0.06) 0px, transparent 50%),
+    radial-gradient(at 80% 70%, rgba(127, 168, 106, 0.06) 0px, transparent 50%);
+}
+
+[data-theme="dark"] .badge-cert {
+  background: var(--color-success);
+  color: #0f1612;
+}
+[data-theme="dark"] .badge-no-cert {
+  background: rgba(227, 106, 74, 0.16);
+  color: var(--color-accent-strong);
+}
+[data-theme="dark"] .badge-at-risk {
+  background: rgba(224, 173, 52, 0.16);
+  color: var(--color-warning);
+}
+
+[data-theme="dark"] .chip-rank-1 { background: rgba(127, 168, 106, 0.20); color: var(--color-rank-1); }
+[data-theme="dark"] .chip-rank-2 { background: rgba(154, 168, 106, 0.20); color: var(--color-rank-2); }
+[data-theme="dark"] .chip-rank-3 { background: rgba(212, 165, 72, 0.20); color: var(--color-rank-3); }
+[data-theme="dark"] .chip-rank-fill { background: rgba(163, 176, 148, 0.20); color: var(--color-rank-fill); }
+[data-theme="dark"] .chip-rank-random { background: rgba(200, 184, 156, 0.20); color: var(--color-rank-random); }
+
+[data-theme="dark"] ::selection {
+  background: rgba(227, 106, 74, 0.32);
+  color: var(--color-accent-strong);
+}
+
+/* Smooth theme transition (only when user toggles, not on first paint) */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, fill 200ms ease, stroke 200ms ease;
+}
+
+/* Print mode — always force light */
+@media print {
+  html[data-theme="dark"] {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-lift: #ffffff;
+    --color-surface-strong: #f4f4f4;
+    --color-ink: #000000;
+    --color-ink-muted: #333333;
+    --color-ink-faint: #666666;
+    --color-border: #cccccc;
+    --color-border-strong: #aaaaaa;
+  }
+}

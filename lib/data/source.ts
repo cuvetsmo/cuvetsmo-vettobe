@@ -126,6 +126,70 @@ export const getReviewsByDept = unstable_cache(
   { revalidate: 30, tags: ["vettobe-reviews"] }
 );
 
+/* ── Recent activity (home feed) ────────────────────────────────────────── */
+
+export type ActivityItem =
+  | {
+      kind: "review";
+      id: string;
+      year_id: number;
+      dept_slug: string;
+      rating: number;
+      comment: string;
+      created_at: string;
+    }
+  | {
+      kind: "issue";
+      id: string;
+      year_id: number;
+      dept_slug: string;
+      issue_type: string;
+      status: string;
+      created_at: string;
+    };
+
+export const getRecentActivity = unstable_cache(
+  async (limit: number = 8): Promise<ActivityItem[]> => {
+    const sb = getSupabaseServer();
+    if (!sb) return [];
+    const [reviews, issues] = await Promise.all([
+      sb
+        .from("vettobe_reviews")
+        .select("id,year_id,dept_slug,rating,comment,created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      sb
+        .from("vettobe_issue_reports")
+        .select("id,year_id,dept_slug,issue_type,status,created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit),
+    ]);
+    const r: ActivityItem[] = (reviews.data ?? []).map((row) => ({
+      kind: "review",
+      id: row.id as string,
+      year_id: row.year_id as number,
+      dept_slug: row.dept_slug as string,
+      rating: row.rating as number,
+      comment: row.comment as string,
+      created_at: row.created_at as string,
+    }));
+    const i: ActivityItem[] = (issues.data ?? []).map((row) => ({
+      kind: "issue",
+      id: row.id as string,
+      year_id: row.year_id as number,
+      dept_slug: row.dept_slug as string,
+      issue_type: row.issue_type as string,
+      status: row.status as string,
+      created_at: row.created_at as string,
+    }));
+    return [...r, ...i]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .slice(0, limit);
+  },
+  ["vettobe-recent-activity"],
+  { revalidate: 60, tags: ["vettobe-reviews", "vettobe-issues"] }
+);
+
 /* ── Status badge ────────────────────────────────────────────────────────── */
 
 export function dataSourceBadge(): "supabase" | "seed" {
