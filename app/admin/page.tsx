@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSupabaseBrowser } from "@/lib/supabase";
+import { CsvImporter } from "@/components/CsvImporter";
 
 type YearRow = {
   id: number;
@@ -338,16 +339,21 @@ export default function AdminPage() {
         )}
       </section>
 
+      <section className="mb-8">
+        <h2 className="text-xl font-serif font-semibold mb-3">Bulk import</h2>
+        <CsvImporter />
+      </section>
+
       <section>
         <h2 className="text-xl font-serif font-semibold mb-3">🚧 Coming next</h2>
         <ul className="grid gap-2 sm:grid-cols-2 text-sm">
           <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
-            <strong className="block text-[var(--color-ink)]">CSV import</strong>
-            <span className="text-[var(--color-ink-muted)]">upload year results bulk</span>
-          </li>
-          <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
             <strong className="block text-[var(--color-ink)]">Inline edit assignment row</strong>
             <span className="text-[var(--color-ink-muted)]">resolve issues by fixing the row directly</span>
+          </li>
+          <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
+            <strong className="block text-[var(--color-ink)]">Form intake integration</strong>
+            <span className="text-[var(--color-ink-muted)]">connect Google Forms for next-year auto-sync</span>
           </li>
         </ul>
       </section>

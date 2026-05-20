@@ -8,6 +8,7 @@ import {
   getDepartments,
   getAssignmentsByDept,
   getReviewsByDept,
+  getDeptCountByYear,
 } from "@/lib/data/source";
 import { ReviewForm } from "@/components/ReviewForm";
 import { ReportIssueButton } from "@/components/ReportIssueButton";
@@ -65,11 +66,12 @@ export default async function DeptYearPage({
 }) {
   const { year, dept } = await params;
   const yearId = Number(year);
-  const [y, d, rows, reviews] = await Promise.all([
+  const [y, d, rows, reviews, countsByYear] = await Promise.all([
     getYear(yearId),
     getDepartment(dept),
     getAssignmentsByDept(yearId, dept),
     getReviewsByDept(yearId, dept),
+    getDeptCountByYear(dept),
   ]);
   if (!y || !d) notFound();
 
@@ -120,6 +122,14 @@ export default async function DeptYearPage({
           </p>
         )}
       </div>
+
+      {/* Cross-year compare */}
+      {Object.keys(countsByYear).length > 1 && (
+        <div className="mb-8 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+          <h2 className="text-sm font-medium text-[var(--color-ink)] mb-3">นิสิตที่ฝึกแผนกนี้แต่ละปี</h2>
+          <YearComparisonBar counts={countsByYear} currentYear={yearId} />
+        </div>
+      )}
 
       {weekNums.length === 0 ? (
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8 text-center">
@@ -218,5 +228,50 @@ function Stars({ n }: { n: number }) {
       {"⭐".repeat(n)}
       <span className="text-[var(--color-ink-faint)]">{"☆".repeat(5 - n)}</span>
     </span>
+  );
+}
+
+function YearComparisonBar({
+  counts,
+  currentYear,
+}: {
+  counts: Record<number, number>;
+  currentYear: number;
+}) {
+  const years = Object.keys(counts)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const max = Math.max(...Object.values(counts), 1);
+  return (
+    <div className="flex items-end gap-3 h-24">
+      {years.map((y) => {
+        const c = counts[y];
+        const h = (c / max) * 100;
+        const isCurrent = y === currentYear;
+        return (
+          <Link
+            key={y}
+            href={`/years/${y}/depts/${currentYear === y ? "" : ""}`}
+            className="flex-1 flex flex-col items-center gap-1 min-w-0 group"
+          >
+            <span className={`text-xs font-mono ${isCurrent ? "text-[var(--color-accent)] font-bold" : "text-[var(--color-ink-muted)]"}`}>
+              {c}
+            </span>
+            <div className="w-full flex-1 flex items-end">
+              <div
+                className={`w-full rounded-t transition-all ${
+                  isCurrent ? "bg-[var(--color-accent)]" : "bg-[var(--color-accent-soft)] group-hover:bg-[var(--color-accent)]/40"
+                }`}
+                style={{ height: `${Math.max(h, 4)}%`, minHeight: c > 0 ? 4 : 1 }}
+                title={`${y}: ${c} นิสิต`}
+              />
+            </div>
+            <span className={`text-xs ${isCurrent ? "text-[var(--color-ink)] font-medium" : "text-[var(--color-ink-faint)]"}`}>
+              {y}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }

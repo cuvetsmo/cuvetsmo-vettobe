@@ -83,6 +83,18 @@ export async function getAssignmentsByDept(
   return all.filter((a) => a.dept_slug === deptSlug);
 }
 
+/* ── Cross-year dept stats ───────────────────────────────────────────────── */
+
+export async function getDeptCountByYear(deptSlug: string): Promise<Record<number, number>> {
+  const years = await getYears();
+  const counts: Record<number, number> = {};
+  for (const y of years) {
+    const rows = await getAssignmentsByDept(y.id, deptSlug);
+    counts[y.id] = rows.length;
+  }
+  return counts;
+}
+
 /* ── Student profile ─────────────────────────────────────────────────────── */
 
 export async function getStudentAssignments(
