@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSupabaseBrowser } from "@/lib/supabase";
 
@@ -11,6 +11,8 @@ type YearRow = {
   unique_students: number;
   status: string;
   data_confidence: string;
+  start_date?: string;
+  end_date?: string;
 };
 
 type IssueRow = {
@@ -19,10 +21,14 @@ type IssueRow = {
   dept_slug: string;
   issue_type: string;
   description: string;
+  suggested_fix: string | null;
   status: string;
   created_at: string;
   reporter_email: string | null;
 };
+
+const STATUS_OPTIONS = ["planning", "active", "archive"];
+const ISSUE_STATUS_OPTIONS = ["open", "in-review", "fixed", "rejected", "duplicate"];
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
@@ -34,6 +40,13 @@ export default function AdminPage() {
   const [magicStatus, setMagicStatus] = useState<"" | "loading" | "sent" | "err">("");
   const [msg, setMsg] = useState("");
   const [claimStatus, setClaimStatus] = useState<"" | "loading" | "ok" | "denied" | "err">("");
+
+  // Year creation form state
+  const [newYearId, setNewYearId] = useState<number>(2570);
+  const [newYearName, setNewYearName] = useState("Vet to be 2570 (2027)");
+  const [newYearStart, setNewYearStart] = useState("2027-05-14");
+  const [newYearEnd, setNewYearEnd] = useState("2027-12-30");
+  const [creatingYear, setCreatingYear] = useState(false);
 
   useEffect(() => {
     const sb = getSupabaseBrowser();
@@ -48,30 +61,32 @@ export default function AdminPage() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const reload = useCallback(async () => {
+    const sb = getSupabaseBrowser();
+    if (!sb || !authed) return;
+    const [yr, rv, iss] = await Promise.all([
+      sb.from("vettobe_years").select("*").order("id", { ascending: false }),
+      sb.from("vettobe_reviews").select("*", { count: "exact", head: true }),
+      sb
+        .from("vettobe_issue_reports")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+    if (yr.data) setYears(yr.data as YearRow[]);
+    setReviewCount(rv.count ?? 0);
+    if (iss.data) setIssues(iss.data as IssueRow[]);
+  }, [authed]);
+
   useEffect(() => {
     if (!authed) return;
     const sb = getSupabaseBrowser();
     if (!sb) return;
-    (async () => {
-      const { data: adminCheck } = await sb.rpc("is_vettobe_admin");
-      setIsAdmin(Boolean(adminCheck));
-      if (adminCheck) {
-        const [yr, rv, iss] = await Promise.all([
-          sb.from("vettobe_years").select("*").order("id", { ascending: false }),
-          sb.from("vettobe_reviews").select("*", { count: "exact", head: true }),
-          sb
-            .from("vettobe_issue_reports")
-            .select("*")
-            .in("status", ["open", "in-review"])
-            .order("created_at", { ascending: false })
-            .limit(20),
-        ]);
-        if (yr.data) setYears(yr.data as YearRow[]);
-        setReviewCount(rv.count ?? 0);
-        if (iss.data) setIssues(iss.data as IssueRow[]);
-      }
-    })();
-  }, [authed]);
+    sb.rpc("is_vettobe_admin").then(({ data }) => {
+      setIsAdmin(Boolean(data));
+      if (data) reload();
+    });
+  }, [authed, reload]);
 
   const sendMagic = async () => {
     const sb = getSupabaseBrowser();
@@ -101,10 +116,47 @@ export default function AdminPage() {
     } else if (data === true) {
       setClaimStatus("ok");
       setIsAdmin(true);
-      // Trigger reload of data
-      setAuthed((a) => (a ? { ...a } : a));
+      reload();
     } else {
       setClaimStatus("denied");
+    }
+  };
+
+  const setStatus = async (yearId: number, status: string) => {
+    const sb = getSupabaseBrowser();
+    if (!sb) return;
+    await sb.rpc("set_vettobe_year_status", { p_year_id: yearId, p_status: status });
+    reload();
+  };
+
+  const resolveIssue = async (issueId: string, status: string, note: string) => {
+    const sb = getSupabaseBrowser();
+    if (!sb) return;
+    await sb.rpc("resolve_vettobe_issue", {
+      p_issue_id: issueId,
+      p_status: status,
+      p_resolution_note: note,
+    });
+    reload();
+  };
+
+  const createYear = async () => {
+    const sb = getSupabaseBrowser();
+    if (!sb) return;
+    setCreatingYear(true);
+    const { error } = await sb.rpc("create_vettobe_year", {
+      p_id: newYearId,
+      p_name: newYearName,
+      p_start_date: newYearStart,
+      p_end_date: newYearEnd,
+      p_status: "planning",
+    });
+    setCreatingYear(false);
+    if (error) {
+      setMsg(error.message);
+    } else {
+      setMsg(`สร้างปี ${newYearId} เรียบร้อย`);
+      reload();
     }
   };
 
@@ -158,6 +210,8 @@ export default function AdminPage() {
     );
   }
 
+  const openIssues = issues.filter((i) => i.status === "open" || i.status === "in-review");
+
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
       <div className="flex items-baseline justify-between flex-wrap gap-3 mb-6">
@@ -176,91 +230,198 @@ export default function AdminPage() {
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
+      <div className="grid gap-4 md:grid-cols-4 mb-8">
         <Stat label="ปีที่บันทึก" value={String(years.length)} />
-        <Stat
-          label="Slots ทั้งหมด"
-          value={String(years.reduce((s, y) => s + (y.total_slots ?? 0), 0))}
-        />
+        <Stat label="Slots ทั้งหมด" value={String(years.reduce((s, y) => s + (y.total_slots ?? 0), 0))} />
         <Stat label="รีวิวรวม" value={String(reviewCount)} />
+        <Stat label="Issue ค้าง" value={String(openIssues.length)} />
       </div>
 
+      {/* Years management */}
       <section className="mb-10">
-        <h2 className="text-xl font-serif font-semibold mb-3">ปีทั้งหมด</h2>
-        <div className="space-y-2">
+        <h2 className="text-xl font-serif font-semibold mb-3">จัดการปี</h2>
+        <div className="space-y-2 mb-4">
           {years.map((y) => (
             <div
               key={y.id}
               className="flex items-center justify-between gap-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 flex-wrap"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="font-serif text-lg font-semibold text-[var(--color-ink)]">{y.id}</div>
                 <div className="text-xs text-[var(--color-ink-muted)]">{y.name}</div>
               </div>
-              <div className="flex gap-3 text-sm text-[var(--color-ink-muted)] items-center">
-                <span>{y.total_slots} slots</span>
-                <span>{y.unique_students} นิสิต</span>
-                <StatusPill v={y.status} />
-                <span className="text-xs">{y.data_confidence}</span>
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                <span className="text-[var(--color-ink-muted)]">{y.total_slots} slots</span>
+                <span className="text-[var(--color-ink-muted)]">{y.unique_students} นิสิต</span>
+                <select
+                  value={y.status}
+                  onChange={(e) => setStatus(y.id, e.target.value)}
+                  className="bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-2 py-1 text-xs"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           ))}
         </div>
+
+        <details className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-4">
+          <summary className="font-medium cursor-pointer">+ สร้างปีใหม่</summary>
+          <div className="grid gap-3 sm:grid-cols-2 mt-4">
+            <label className="block">
+              <span className="text-sm font-medium block mb-1">ID (พ.ศ.)</span>
+              <input
+                type="number"
+                value={newYearId}
+                onChange={(e) => setNewYearId(Number(e.target.value))}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium block mb-1">ชื่อเต็ม</span>
+              <input
+                value={newYearName}
+                onChange={(e) => setNewYearName(e.target.value)}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium block mb-1">เริ่ม</span>
+              <input
+                type="date"
+                value={newYearStart}
+                onChange={(e) => setNewYearStart(e.target.value)}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium block mb-1">จบ</span>
+              <input
+                type="date"
+                value={newYearEnd}
+                onChange={(e) => setNewYearEnd(e.target.value)}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-3 py-2"
+              />
+            </label>
+          </div>
+          <button
+            onClick={createYear}
+            disabled={creatingYear || !newYearId || !newYearName}
+            className="mt-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] !text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+          >
+            {creatingYear ? "กำลังสร้าง..." : "สร้างปี (status = planning)"}
+          </button>
+          {msg && <p className="mt-2 text-sm text-[var(--color-ink-muted)]">{msg}</p>}
+        </details>
       </section>
 
+      {/* Issue queue */}
       <section className="mb-10">
-        <h2 className="text-xl font-serif font-semibold mb-3 flex items-baseline justify-between gap-2">
-          <span>Issue queue {issues.length > 0 && <span className="text-base text-[var(--color-ink-muted)] font-normal">({issues.length})</span>}</span>
+        <h2 className="text-xl font-serif font-semibold mb-3">
+          Issue queue{" "}
+          {openIssues.length > 0 && (
+            <span className="text-base text-[var(--color-ink-muted)] font-normal">({openIssues.length} open)</span>
+          )}
         </h2>
         {issues.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-muted)]">ไม่มี issue ที่รอ review · 🙌</p>
+          <p className="text-sm text-[var(--color-ink-muted)]">ยังไม่มี issue · 🙌</p>
         ) : (
           <ul className="space-y-2">
             {issues.map((it) => (
-              <li
-                key={it.id}
-                className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3"
-              >
-                <div className="flex items-baseline gap-2 flex-wrap text-sm">
-                  <span className="font-mono text-xs bg-[var(--color-surface-strong)] px-2 py-0.5 rounded">
-                    {it.year_id} · {it.dept_slug}
-                  </span>
-                  <span className="text-xs px-2 py-0.5 rounded chip-rank-3">{it.issue_type}</span>
-                  <span className="text-xs text-[var(--color-ink-faint)]">
-                    {new Date(it.created_at).toLocaleString("th-TH")}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-sm text-[var(--color-ink-muted)] whitespace-pre-line">
-                  {it.description}
-                </p>
-              </li>
+              <IssueCard key={it.id} issue={it} onResolve={resolveIssue} />
             ))}
           </ul>
         )}
       </section>
 
       <section>
-        <h2 className="text-xl font-serif font-semibold mb-3">🚧 Ops actions (Phase 7+)</h2>
+        <h2 className="text-xl font-serif font-semibold mb-3">🚧 Coming next</h2>
         <ul className="grid gap-2 sm:grid-cols-2 text-sm">
           <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
             <strong className="block text-[var(--color-ink)]">CSV import</strong>
-            <span className="text-[var(--color-ink-muted)]">upload year results — coming soon</span>
+            <span className="text-[var(--color-ink-muted)]">upload year results bulk</span>
           </li>
           <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
-            <strong className="block text-[var(--color-ink)]">Form intake</strong>
-            <span className="text-[var(--color-ink-muted)]">connect Google Forms for next year — coming soon</span>
-          </li>
-          <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
-            <strong className="block text-[var(--color-ink)]">Toggle year status</strong>
-            <span className="text-[var(--color-ink-muted)]">planning → active → archive — coming soon</span>
-          </li>
-          <li className="bg-[var(--color-surface-lift)] rounded-lg p-3">
-            <strong className="block text-[var(--color-ink)]">Resolve issues</strong>
-            <span className="text-[var(--color-ink-muted)]">edit row + mark fixed — coming soon</span>
+            <strong className="block text-[var(--color-ink)]">Inline edit assignment row</strong>
+            <span className="text-[var(--color-ink-muted)]">resolve issues by fixing the row directly</span>
           </li>
         </ul>
       </section>
     </div>
+  );
+}
+
+function IssueCard({
+  issue,
+  onResolve,
+}: {
+  issue: IssueRow;
+  onResolve: (id: string, status: string, note: string) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState(issue.status);
+  const [note, setNote] = useState("");
+  const isResolved = !["open", "in-review"].includes(issue.status);
+
+  return (
+    <li className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3 ${isResolved ? "opacity-60" : ""}`}>
+      <div className="flex items-baseline gap-2 flex-wrap text-sm">
+        <Link
+          href={`/years/${issue.year_id}/depts/${issue.dept_slug}`}
+          className="font-mono text-xs bg-[var(--color-surface-strong)] px-2 py-0.5 rounded hover:bg-[var(--color-surface-lift)]"
+        >
+          {issue.year_id} · {issue.dept_slug}
+        </Link>
+        <span className="text-xs px-2 py-0.5 rounded chip-rank-3">{issue.issue_type}</span>
+        <span className={`text-xs px-2 py-0.5 rounded ${isResolved ? "chip-rank-1" : "chip-rank-2"}`}>{issue.status}</span>
+        <span className="text-xs text-[var(--color-ink-faint)]">
+          {new Date(issue.created_at).toLocaleString("th-TH")}
+        </span>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="ml-auto text-xs text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
+        >
+          {open ? "ปิด" : "จัดการ"}
+        </button>
+      </div>
+      <p className="mt-1.5 text-sm text-[var(--color-ink-muted)] whitespace-pre-line">{issue.description}</p>
+      {issue.suggested_fix && (
+        <p className="mt-1 text-xs text-[var(--color-ink-faint)] italic">→ {issue.suggested_fix}</p>
+      )}
+      {open && !isResolved && (
+        <div className="mt-3 pt-3 border-t border-[var(--color-border)] grid gap-2">
+          <div className="flex items-center gap-2">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-2 py-1 text-sm"
+            >
+              {ISSUE_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="resolution note (optional)"
+              className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded px-2 py-1 text-sm"
+            />
+            <button
+              onClick={() => onResolve(issue.id, status, note)}
+              className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] !text-white px-3 py-1 rounded text-sm font-medium"
+            >
+              บันทึก
+            </button>
+          </div>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -319,13 +480,4 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="font-serif text-2xl font-semibold text-[var(--color-ink)]">{value}</div>
     </div>
   );
-}
-
-function StatusPill({ v }: { v: string }) {
-  const map: Record<string, string> = {
-    active: "badge-cert",
-    archive: "bg-[var(--color-surface-strong)] text-[var(--color-ink-muted)]",
-    planning: "badge-at-risk",
-  };
-  return <span className={`text-xs px-2 py-0.5 rounded ${map[v] ?? ""}`}>{v}</span>;
 }

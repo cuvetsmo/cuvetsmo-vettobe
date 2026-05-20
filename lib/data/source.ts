@@ -83,6 +83,18 @@ export async function getAssignmentsByDept(
   return all.filter((a) => a.dept_slug === deptSlug);
 }
 
+/* ── Student profile ─────────────────────────────────────────────────────── */
+
+export async function getStudentAssignments(
+  yearId: number,
+  shortId: string
+): Promise<Assignment[]> {
+  const all = await getAssignmentsByYear(yearId);
+  return all
+    .filter((a) => a.short_id === shortId)
+    .sort((a, b) => a.week - b.week);
+}
+
 /* ── Reviews ─────────────────────────────────────────────────────────────── */
 
 export const getReviewsByDept = unstable_cache(

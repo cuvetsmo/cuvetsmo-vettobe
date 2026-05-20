@@ -6,23 +6,31 @@ import type { Assignment } from "@/lib/types";
 
 type AssignmentWithDept = Assignment & { dept_short_th?: string };
 
+const AVAILABLE_YEARS = [2569, 2568, 2567];
+
 export default function LookupPage() {
   const [q, setQ] = useState("");
+  const [yearFilter, setYearFilter] = useState<number | "all">("all");
   const [rows, setRows] = useState<AssignmentWithDept[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all 2569 assignments once on mount — small enough (< 100 KB).
+  // Fetch all years on mount so client-side filter works without round-trips.
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/assignments?year=2569")
-      .then((r) => r.json())
-      .then((j) => {
+    Promise.all(
+      AVAILABLE_YEARS.map((y) =>
+        fetch(`/api/assignments?year=${y}`)
+          .then((r) => r.json())
+          .then((j) => j.assignments || [])
+          .catch(() => [])
+      )
+    )
+      .then((results) => {
         if (!cancelled) {
-          setRows(j.assignments || []);
+          setRows(results.flat());
           setLoading(false);
         }
-      })
-      .catch(() => setLoading(false));
+      });
     return () => {
       cancelled = true;
     };
@@ -31,39 +39,46 @@ export default function LookupPage() {
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
     if (query.length < 1) return [];
-    return rows.filter(
-      (a) =>
+    return rows.filter((a) => {
+      if (yearFilter !== "all" && a.year_id !== yearFilter) return false;
+      return (
         a.nickname.toLowerCase().includes(query) ||
         a.short_id.includes(query) ||
         (a.full_name && a.full_name.toLowerCase().includes(query))
-    );
-  }, [q, rows]);
+      );
+    });
+  }, [q, rows, yearFilter]);
 
-  // Group results by student
+  // Group results by student (year + short_id + nickname is unique key)
   const byStudent = useMemo(() => {
     type Group = {
-      student: Pick<Assignment, "nickname" | "short_id" | "full_name" | "student_year">;
-      rows: Assignment[];
+      key: string;
+      student: Pick<Assignment, "nickname" | "short_id" | "full_name" | "student_year" | "year_id">;
+      rows: AssignmentWithDept[];
     };
     const map = new Map<string, Group>();
     for (const r of results) {
-      const key = `${r.short_id}-${r.nickname}`;
+      const key = `${r.year_id}-${r.short_id}-${r.nickname}`;
       if (!map.has(key)) {
         map.set(key, {
+          key,
           student: {
             nickname: r.nickname,
             short_id: r.short_id,
             full_name: r.full_name,
             student_year: r.student_year,
+            year_id: r.year_id,
           },
           rows: [],
         });
       }
       map.get(key)!.rows.push(r);
     }
-    return Array.from(map.values()).sort((a, b) =>
-      a.student.nickname.localeCompare(b.student.nickname, "th")
-    );
+    return Array.from(map.values()).sort((a, b) => {
+      // sort by year desc then nickname asc
+      if (a.student.year_id !== b.student.year_id) return b.student.year_id - a.student.year_id;
+      return a.student.nickname.localeCompare(b.student.nickname, "th");
+    });
   }, [results]);
 
   return (
@@ -75,24 +90,38 @@ export default function LookupPage() {
         เพื่อดูว่าตัวเองอยู่แผนกไหน ฝึกกี่วันในแต่ละปี
       </p>
 
-      <div className="relative mb-6">
-        <input
-          type="search"
-          placeholder="เช่น &quot;แบม&quot; หรือ &quot;032&quot;"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          autoFocus
-          className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] focus:border-[var(--color-accent)] rounded-lg px-4 py-3 text-lg outline-none focus:ring-2 focus:ring-[var(--color-accent-soft)] transition"
-        />
-        {q && (
-          <button
-            onClick={() => setQ("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-            aria-label="ล้างค่าค้น"
-          >
-            ✕
-          </button>
-        )}
+      <div className="flex gap-3 mb-6 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <input
+            type="search"
+            placeholder="เช่น &quot;แบม&quot; หรือ &quot;032&quot;"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            autoFocus
+            className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] focus:border-[var(--color-accent)] rounded-lg px-4 py-3 text-lg outline-none focus:ring-2 focus:ring-[var(--color-accent-soft)] transition"
+          />
+          {q && (
+            <button
+              onClick={() => setQ("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+              aria-label="ล้างค่าค้น"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <select
+          value={String(yearFilter)}
+          onChange={(e) => setYearFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+          className="bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-lg px-3 py-3 text-base outline-none focus:border-[var(--color-accent)]"
+        >
+          <option value="all">ทุกปี</option>
+          {AVAILABLE_YEARS.map((y) => (
+            <option key={y} value={y}>
+              ปี {y}
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading && q.length === 0 && (
@@ -125,21 +154,26 @@ export default function LookupPage() {
       )}
 
       <div className="space-y-4">
-        {byStudent.map(({ student, rows }) => {
+        {byStudent.map(({ key, student, rows }) => {
           const totalDays = rows.reduce((s, r) => s + r.days_practiced, 0);
           const certOk = totalDays >= 7;
           return (
             <div
-              key={`${student.short_id}-${student.nickname}`}
+              key={key}
               className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5"
             >
               <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <span className="font-serif text-xl font-semibold text-[var(--color-ink)]">
-                    {student.nickname}
-                  </span>
+                  <Link
+                    href={`/students/${student.year_id}/${student.short_id}`}
+                    className="group !text-[var(--color-ink)] hover:!text-[var(--color-accent)]"
+                  >
+                    <span className="font-serif text-xl font-semibold group-hover:underline underline-offset-4 decoration-2">
+                      {student.nickname}
+                    </span>
+                  </Link>
                   <span className="text-[var(--color-ink-faint)] ml-1.5 text-sm">
-                    #{student.short_id} · ปี {student.student_year}
+                    #{student.short_id} · ปี {student.student_year} · {student.year_id}
                   </span>
                   {student.full_name && (
                     <span className="block text-sm text-[var(--color-ink-muted)] mt-0.5">
