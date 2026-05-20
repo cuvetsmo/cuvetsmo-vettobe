@@ -127,7 +127,7 @@ export default async function Home() {
           <Feature icon="⭐" title="รีวิวแต่ละแผนก × ปี" desc="คนที่เคยฝึกจริงรีวิวแผนก แต่ละปีก็ไม่เหมือนกัน รุ่นพี่อาจารย์เปลี่ยน บรรยากาศต่าง" href={`/years/${latest?.id ?? 2569}`} />
           <Feature icon="📋" title="ดูตารางทั้งโครงการ" desc="ตารางรายแผนก × 14 สัปดาห์ ของแต่ละปี ดู capacity ความหนาแน่นได้ทั้งหมด" href={`/years/${latest?.id ?? 2569}`} />
           <Feature icon="🎓" title="ตรวจสถานะเกียรติบัตร" desc="ใครได้/ใครยังไม่ได้เกียรติบัตร W9-only เสี่ยงไม่ครบ 7 วัน รู้ทันก่อน" href={`/years/${latest?.id ?? 2569}`} />
-          <Feature icon="🛠️" title="ทีมหัวปีจัดรอบใหม่" desc="รุ่นหัวปีต่อไปสามารถใช้เว็บนี้เป็น operations console — รับฟอร์ม จัดสรร ประกาศ ในที่เดียว" href="/about" badge="Phase 2" />
+          <Feature icon="🛠️" title="ทีมหัวปีจัดรอบใหม่" desc="ทีมหัวปีรุ่นต่อไปใช้ /admin เป็น operations console ได้เลย · edit / CSV bulk import / issue queue / capacity audit · ไม่ต้องใช้ Excel + claude.ai แยกกันแล้ว" href="/about" />
           <Feature icon="📚" title="คลังข้อมูลระยะยาว" desc="เก็บข้อมูลย้อนหลังตลอดไป — รุ่นน้องจะดูได้ว่า 5 ปีก่อนมีใครเคยฝึกตรงไหน บรรยากาศเป็นยังไง" href="/years" />
         </div>
       </section>
@@ -142,7 +142,7 @@ export default async function Home() {
             <span className="text-xl shrink-0">⚠️</span>
             <div className="text-sm text-[var(--color-ink-muted)] leading-relaxed">
               <strong className="text-[var(--color-ink)]">ข้อมูลอาจยังไม่ถูกต้องทั้งหมด</strong> —
-              ปี 2569 ข้อมูลส่วนใหญ่มาจากผลจัดเวรอัตโนมัติ + manual swaps ของทีมหัวปี
+              ปี 2569 ข้อมูลส่วนใหญ่มาจากผลจัดเวรอัตโนมัติ + manual swaps ของทีมหัวปี cuvet86 + cuvet87
               ส่วนปีก่อนหน้าเป็นข้อมูลที่เพื่อนๆ ช่วยกันกรอก (crowdsourced)
               ถ้าเจอข้อมูลของตัวเองคลาดเคลื่อน{" "}
               <Link href="/about" className="font-medium">แจ้งได้ที่ปุ่ม "report" ในแต่ละหน้า</Link>{" "}

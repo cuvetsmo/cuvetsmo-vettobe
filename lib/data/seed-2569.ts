@@ -10,7 +10,7 @@ import type { Assignment } from "../types";
  *   rows: the 23 students from the changelog (with verified manual swaps) +
  *   ~40 representative W1–W14 rows lifted from the master grid.
  * - The remaining ~230 assignments live in the original FINAL PDF on Palm's
- *   machine and the Google Sheets that ทีมหัวปี cuvet86 published.
+ *   machine and the Google Sheets that ทีมหัวปี cuvet86 + cuvet87 published.
  * - Phase 1b will import the full dataset into Supabase via the admin console
  *   once schema + auth are wired.
  *

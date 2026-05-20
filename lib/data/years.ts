@@ -15,7 +15,7 @@ export const YEARS: VettobeYear[] = [
     status: "active",
     data_confidence: "verified",
     notes:
-      "รอบล่าสุด — ทีมหัวปี cuvet86 จัดผ่านอัลกอริทึม + manual round-2+ swaps · 23 students adjusted post-publish · 5 W9-only students at risk of not getting cert",
+      "รอบล่าสุด · ทีมหัวปี cuvet86 + cuvet87 ช่วยกันจัดผ่านอัลกอริทึม + manual round-2+ swaps · 23 students adjusted post-publish · 5 W9-only at risk",
   },
   {
     id: 2568,

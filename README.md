@@ -14,9 +14,10 @@ A long-term home for everything Vet to be:
 4. **Long-term historical archive** — multi-year support from day one
 5. **Public hub / front door** for anyone curious about the program
 
-Year is a first-class entity. The 2569 (2026) seed includes ~60 of 290 assignments
-from the FINAL PDF + manual round-2+ swaps; the rest will be imported into
-Supabase in Phase 1b.
+Year is a first-class entity. The 2569 (2026) data covers the full 290 assignments
+across 161 students from `ตารางรายแผนก_FINAL.pdf` (5/19), co-organized by ทีมหัวปี
+**cuvet86 + cuvet87** — รุ่นพี่ปี 5 + รุ่นน้องปี 4 ช่วยกันรับฟอร์ม จัด อันดับ และ
+swap manual หลายรอบ.
 
 ## Stack
 
@@ -46,13 +47,20 @@ npm run dev
 
 Visit http://localhost:3000.
 
-## Roadmap
+## Status
 
-- ✅ Phase 1a — Scaffold + theme + 4 core pages (home, lookup, years, dept)
-- 🔜 Phase 1b — Supabase schema + import full 290-row 2569 dataset
-- 🔜 Phase 1c — Auth + per-dept reviews
-- 🔜 Phase 1d — Operations console for ทีมหัวปี (form intake, scheduler, publish)
-- 📅 Phase 1e — Crowdsource backfill for 2567 + 2568
+Phases 1–14 shipped (2026-05-20). Live at https://vettobe.cuvetsmo.com.
+
+Highlights:
+
+- ✅ 290-row 2569 dataset synced from FINAL PDF (5/19) via idempotent pipeline
+- ✅ Magic-link auth + per-dept reviews + crowdsource backfill (/contribute)
+- ✅ Operations console (/admin): edit · CSV bulk import · issue queue · capacity audit (/admin/audit)
+- ✅ Per-student profile + dynamic OG image (with Noto Sans Thai)
+- ✅ PWA installable + mobile bottom-nav + dark mode + share intents + 404/500 pages
+- ✅ ทีมหัวปี credits (cuvet86 + cuvet87 for 2569)
+
+See `sessions/` in the MycOS vault for the full per-phase log.
 
 ## Project structure
 
