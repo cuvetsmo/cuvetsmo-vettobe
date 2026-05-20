@@ -66,10 +66,23 @@ export default async function YearPage({
       </div>
 
       {hasData && (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 mb-8">
-          <h2 className="text-lg font-serif font-semibold mb-3">การกระจาย slot ต่อสัปดาห์</h2>
-          <WeekHistogram assignments={assignments} />
-        </div>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 mb-8">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
+              <h2 className="text-lg font-serif font-semibold mb-3">การกระจาย slot ต่อสัปดาห์</h2>
+              <WeekHistogram assignments={assignments} />
+            </div>
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
+              <h2 className="text-lg font-serif font-semibold mb-3">คุณภาพการจัด</h2>
+              <RankBreakdown assignments={assignments} />
+            </div>
+          </div>
+
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 mb-8">
+            <h2 className="text-lg font-serif font-semibold mb-3">เกียรติบัตร</h2>
+            <CertStats assignments={assignments} />
+          </div>
+        </>
       )}
 
       <h2 className="text-2xl font-serif font-semibold mb-4">แผนกทั้งหมด</h2>
@@ -116,6 +129,101 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <div className="text-[10px] uppercase tracking-wide text-[var(--color-ink-faint)] mb-0.5">{label}</div>
       <div className="font-serif text-xl font-semibold text-[var(--color-ink)]">{value}</div>
       {sub && <div className="text-[10px] text-[var(--color-ink-muted)] mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function RankBreakdown({ assignments }: { assignments: { rank: string }[] }) {
+  const labels: Record<string, { label: string; cls: string }> = {
+    "rank-1": { label: "อันดับ 1", cls: "chip-rank-1" },
+    "rank-2": { label: "อันดับ 2", cls: "chip-rank-2" },
+    "rank-3": { label: "อันดับ 3", cls: "chip-rank-3" },
+    fill: { label: "เติม", cls: "chip-rank-fill" },
+    random: { label: "สุ่ม", cls: "chip-rank-random" },
+    manual: { label: "Manual", cls: "chip-rank-1" },
+  };
+  const counts = new Map<string, number>();
+  for (const a of assignments) counts.set(a.rank, (counts.get(a.rank) ?? 0) + 1);
+  const total = assignments.length || 1;
+  const order = ["rank-1", "rank-2", "rank-3", "fill", "random", "manual"];
+  return (
+    <ul className="space-y-1.5 text-sm">
+      {order.map((k) => {
+        const n = counts.get(k) ?? 0;
+        if (n === 0) return null;
+        const pct = (n / total) * 100;
+        const meta = labels[k] ?? { label: k, cls: "chip-rank-random" };
+        return (
+          <li key={k}>
+            <div className="flex items-baseline justify-between mb-0.5">
+              <span className={`text-xs px-1.5 py-0.5 rounded ${meta.cls}`}>{meta.label}</span>
+              <span className="text-xs text-[var(--color-ink-muted)]">
+                {n} <span className="text-[var(--color-ink-faint)]">({pct.toFixed(1)}%)</span>
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-[var(--color-surface-lift)] overflow-hidden">
+              <div
+                className="h-full bg-[var(--color-accent)]/60"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function CertStats({
+  assignments,
+}: {
+  assignments: { short_id: string; student_year: number; days_practiced: number }[];
+}) {
+  // Group by student (short_id + student_year) → sum days
+  const byStudent = new Map<string, { year: number; days: number }>();
+  for (const a of assignments) {
+    const key = `${a.student_year}-${a.short_id}`;
+    const cur = byStudent.get(key);
+    if (cur) cur.days += a.days_practiced;
+    else byStudent.set(key, { year: a.student_year, days: a.days_practiced });
+  }
+  const total = byStudent.size;
+  const certOk = Array.from(byStudent.values()).filter((s) => s.days >= 7).length;
+  const noCert = total - certOk;
+  const avgDays = Array.from(byStudent.values()).reduce((s, x) => s + x.days, 0) / Math.max(total, 1);
+  const certPct = (certOk / Math.max(total, 1)) * 100;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <div>
+        <div className="text-xs uppercase tracking-wide text-[var(--color-ink-faint)] mb-0.5">
+          ได้เกียรติบัตร
+        </div>
+        <div className="font-serif text-2xl font-semibold text-[var(--color-success)]">
+          {certOk} <span className="text-base text-[var(--color-ink-muted)] font-normal">/ {total}</span>
+        </div>
+        <div className="text-xs text-[var(--color-ink-muted)] mt-0.5">{certPct.toFixed(1)}%</div>
+      </div>
+      <div>
+        <div className="text-xs uppercase tracking-wide text-[var(--color-ink-faint)] mb-0.5">
+          ไม่ครบ 7 วัน
+        </div>
+        <div className={`font-serif text-2xl font-semibold ${noCert > 0 ? "text-[var(--color-warning)]" : "text-[var(--color-ink-muted)]"}`}>
+          {noCert}
+        </div>
+        <div className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+          {noCert > 0 ? "ต้องตามวันเพิ่ม" : "ครบทุกคน"}
+        </div>
+      </div>
+      <div>
+        <div className="text-xs uppercase tracking-wide text-[var(--color-ink-faint)] mb-0.5">
+          วันฝึกเฉลี่ย
+        </div>
+        <div className="font-serif text-2xl font-semibold text-[var(--color-ink)]">
+          {avgDays.toFixed(1)}
+        </div>
+        <div className="text-xs text-[var(--color-ink-muted)] mt-0.5">วัน/คน</div>
+      </div>
     </div>
   );
 }

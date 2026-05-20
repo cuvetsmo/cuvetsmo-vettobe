@@ -79,27 +79,24 @@ export default function ContributePage() {
     const sb = getSupabaseBrowser();
     if (!sb || !authed) return;
     setSubmitStatus("loading");
-    // Insert with source = verified-self-report so it's distinguishable from algorithm/manual
-    // RLS: assignments table is service-role-only write. For now we wedge via a
-    // workaround — write to vettobe_reviews instead with a special tag, and Palm's
-    // admin will move it to assignments. (Proper flow needs a SECURITY DEFINER func
-    // or a /api/contribute server action — Phase 4b).
-    const { error } = await sb.from("vettobe_reviews").insert({
-      year_id: yearId,
-      dept_slug: dept,
-      reviewer_short_id: shortId.trim(),
-      reviewer_uid: authed.uid,
-      rating: 3, // placeholder
-      comment: `[CONTRIBUTE] ${nickname} #${shortId} ปี${studentYear} → W${week} (${days} วัน). Notes: ${notes || "—"}`,
-      tags: ["contribute", "pending-import"],
-      verified: false,
+    // SECURITY DEFINER RPC writes to vettobe_assignments directly with source=verified-self-report
+    const { error } = await sb.rpc("submit_vettobe_contribution", {
+      p_year_id: yearId,
+      p_dept_slug: dept,
+      p_week: week,
+      p_short_id: shortId.trim().padStart(3, "0"),
+      p_nickname: nickname.trim(),
+      p_full_name: "",
+      p_student_year: studentYear,
+      p_days_practiced: days,
+      p_notes: notes.trim() || null,
     });
     if (error) {
       setSubmitStatus("err");
       setMsg(error.message);
     } else {
       setSubmitStatus("ok");
-      setMsg("ขอบคุณครับ ข้อมูลถูกบันทึกแล้ว ทีมหัวปีจะย้ายเข้า archive เร็วๆ นี้");
+      setMsg("ขอบคุณครับ ข้อมูลถูกบันทึกในระบบแล้ว — ปรากฏใน /lookup และหน้าแผนกนั้นทันที");
       setNickname("");
       setShortId("");
       setDept("");
@@ -266,11 +263,11 @@ export default function ContributePage() {
       )}
 
       <div className="mt-8 text-sm text-[var(--color-ink-muted)] bg-[var(--color-accent-soft)]/30 border border-[var(--color-border)] rounded-lg p-4">
-        <p className="font-medium text-[var(--color-ink)] mb-1">⚠️ ข้อจำกัดของ Phase 4 (ตอนนี้)</p>
+        <p className="font-medium text-[var(--color-ink)] mb-1">ℹ️ ฟอร์มนี้บันทึกตรงเข้าระบบ</p>
         <p>
-          ข้อมูล contribute จะถูกบันทึกเป็น "pending" — ทีมหัวปีต้องตรวจสอบและย้ายเข้า assignments
-          ในเฟสถัดไปจะมี SECURITY DEFINER function เพื่อให้บันทึกเข้าตรงโดย user
-          ที่ verify แล้ว
+          ข้อมูลถูกเก็บด้วย source = <code>verified-self-report</code> — โดยใช้
+          SECURITY DEFINER function · จำกัดเฉพาะปีย้อนหลังที่ status = "archive"
+          (ป้องกัน random user แก้ปี 2569 ที่ live อยู่)
         </p>
       </div>
     </div>

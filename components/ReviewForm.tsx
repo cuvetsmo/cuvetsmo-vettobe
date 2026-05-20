@@ -48,15 +48,14 @@ export function ReviewForm({ yearId, deptSlug }: { yearId: number; deptSlug: str
     const sb = getSupabaseBrowser();
     if (!sb || !authed) return;
     setStatus("loading");
-    const { error } = await sb.from("vettobe_reviews").insert({
-      year_id: yearId,
-      dept_slug: deptSlug,
-      reviewer_short_id: shortId.trim(),
-      reviewer_uid: authed.uid,
-      rating,
-      comment: comment.trim() || null,
-      tags: tags.trim() ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-      verified: false, // will be flipped by a server check later
+    // Use SECURITY DEFINER RPC — auto-verifies if reviewer_short_id matches an assignment row
+    const { error } = await sb.rpc("submit_vettobe_review", {
+      p_year_id: yearId,
+      p_dept_slug: deptSlug,
+      p_reviewer_short_id: shortId.trim(),
+      p_rating: rating,
+      p_comment: comment.trim() || null,
+      p_tags: tags.trim() ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     });
     if (error) {
       setStatus("err");

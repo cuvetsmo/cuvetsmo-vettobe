@@ -10,6 +10,7 @@ import {
   getReviewsByDept,
 } from "@/lib/data/source";
 import { ReviewForm } from "@/components/ReviewForm";
+import { ReportIssueButton } from "@/components/ReportIssueButton";
 
 export async function generateStaticParams() {
   const [years, depts] = await Promise.all([getYears(), getDepartments()]);
@@ -202,6 +203,10 @@ export default async function DeptYearPage({
         )}
 
         <ReviewForm yearId={yearId} deptSlug={dept} />
+      </div>
+
+      <div className="mt-6">
+        <ReportIssueButton yearId={yearId} deptSlug={dept} />
       </div>
     </div>
   );
